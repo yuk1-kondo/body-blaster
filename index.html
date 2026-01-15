@@ -26,7 +26,7 @@
 
         <!-- ゲーム画面 -->
         <div id="game-screen" style="display: none;">
-            <!-- カメラ映像（非表示だが必要） -->
+            <!-- カメラ映像（右下に表示） -->
             <video id="camera-video" autoplay playsinline muted></video>
 
             <!-- 姿勢デバッグ用キャンバス -->
@@ -40,6 +40,23 @@
                 <div id="score-display">SCORE: <span id="score">0</span></div>
                 <div id="hp-display">HP: <span id="hp">♥♥♥</span></div>
                 <button id="toggle-debug">骨格表示: OFF</button>
+            </div>
+
+            <!-- アクション説明 -->
+            <div id="action-guide">
+                <h4>操作方法</h4>
+                <div class="action-item">
+                    <span class="action-icon">🔄</span>
+                    <span class="action-text">体を左右に動かす</span>
+                </div>
+                <div class="action-item">
+                    <span class="action-icon">👐</span>
+                    <span class="action-text">両手を前に出す</span>
+                </div>
+                <div class="action-item">
+                    <span class="action-icon">🤸</span>
+                    <span class="action-text">両手を大きく広げる</span>
+                </div>
             </div>
         </div>
 

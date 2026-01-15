@@ -103,7 +103,17 @@ button:active {
 }
 
 #camera-video {
-    display: none;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 240px;
+    height: 180px;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    transform: scaleX(-1); /* 鏡像反転 */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    z-index: 100;
 }
 
 #debug-canvas {
@@ -161,6 +171,49 @@ button:active {
     backdrop-filter: blur(5px);
 }
 
+/* アクション説明 */
+#action-guide {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    z-index: 50;
+    min-width: 220px;
+}
+
+#action-guide h4 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    text-align: center;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 8px;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    padding: 6px 0;
+}
+
+.action-icon {
+    font-size: 1.5rem;
+    margin-right: 12px;
+    width: 30px;
+    text-align: center;
+}
+
+.action-text {
+    font-size: 0.9rem;
+    color: #ffffff;
+    flex: 1;
+}
+
 /* ゲームオーバー画面 */
 #gameover-screen {
     text-align: center;
@@ -195,5 +248,32 @@ button:active {
     #debug-canvas {
         width: 200px;
         height: 150px;
+    }
+
+    #camera-video {
+        width: 160px;
+        height: 120px;
+        bottom: 10px;
+        right: 10px;
+    }
+
+    #action-guide {
+        top: 60px;
+        left: 10px;
+        padding: 10px 15px;
+        min-width: 180px;
+    }
+
+    #action-guide h4 {
+        font-size: 0.85rem;
+    }
+
+    .action-icon {
+        font-size: 1.2rem;
+        width: 25px;
+    }
+
+    .action-text {
+        font-size: 0.75rem;
     }
 }
