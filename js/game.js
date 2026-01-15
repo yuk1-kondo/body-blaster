@@ -8,15 +8,17 @@ class Game {
         this.gameoverScreen = document.getElementById('gameover-screen');
         this.startButton = document.getElementById('start-button');
         this.restartButton = document.getElementById('restart-button');
-        this.toggleDebugButton = document.getElementById('toggle-debug');
+        this.toggleCameraButton = document.getElementById('toggle-camera');
 
         // キャンバス
         this.gameCanvas = document.getElementById('game-canvas');
         this.gameCtx = this.gameCanvas.getContext('2d');
-        this.debugCanvas = document.getElementById('debug-canvas');
+        this.cameraOverlayCanvas = document.getElementById('camera-overlay-canvas');
 
         // カメラ
         this.video = document.getElementById('camera-video');
+        this.cameraPreview = document.getElementById('camera-preview');
+        this.cameraVisible = true;
 
         // ゲーム状態
         this.state = 'title'; // title, playing, gameover
@@ -45,14 +47,12 @@ class Game {
     setupEventListeners() {
         this.startButton.addEventListener('click', () => this.startGame());
         this.restartButton.addEventListener('click', () => this.restartGame());
-        this.toggleDebugButton.addEventListener('click', () => this.toggleDebug());
+        this.toggleCameraButton.addEventListener('click', () => this.toggleCamera());
     }
 
     resizeCanvas() {
         this.gameCanvas.width = window.innerWidth;
         this.gameCanvas.height = window.innerHeight;
-        this.debugCanvas.width = 320;
-        this.debugCanvas.height = 240;
     }
 
     async startGame() {
@@ -61,7 +61,7 @@ class Game {
 
         // カメラとポーズ検出を初期化
         try {
-            await this.poseDetector.init(this.video, this.debugCanvas);
+            await this.poseDetector.init(this.video, this.cameraOverlayCanvas);
 
             // ポーズ検出コールバック設定
             this.poseDetector.on('onMove', (normalizedX) => {
@@ -120,10 +120,10 @@ class Game {
         this.state = 'playing';
     }
 
-    toggleDebug() {
-        const currentMode = this.poseDetector.debugMode;
-        this.poseDetector.setDebugMode(!currentMode);
-        this.toggleDebugButton.textContent = `骨格表示: ${!currentMode ? 'ON' : 'OFF'}`;
+    toggleCamera() {
+        this.cameraVisible = !this.cameraVisible;
+        this.cameraPreview.style.display = this.cameraVisible ? 'block' : 'none';
+        this.toggleCameraButton.textContent = `カメラ: ${this.cameraVisible ? 'ON' : 'OFF'}`;
     }
 
     gameLoop() {

@@ -26,11 +26,14 @@
 
         <!-- ゲーム画面 -->
         <div id="game-screen" style="display: none;">
-            <!-- カメラ映像（右下に表示） -->
-            <video id="camera-video" autoplay playsinline muted></video>
+            <!-- カメラプレビュー（右下） -->
+            <div id="camera-preview">
+                <video id="camera-video" autoplay playsinline muted></video>
+                <canvas id="camera-overlay-canvas"></canvas>
+            </div>
 
-            <!-- 姿勢デバッグ用キャンバス -->
-            <canvas id="debug-canvas"></canvas>
+            <!-- 姿勢デバッグ用キャンバス（旧：削除予定） -->
+            <canvas id="debug-canvas" style="display: none;"></canvas>
 
             <!-- ゲーム用キャンバス -->
             <canvas id="game-canvas"></canvas>
@@ -39,7 +42,7 @@
             <div id="ui-overlay">
                 <div id="score-display">SCORE: <span id="score">0</span></div>
                 <div id="hp-display">HP: <span id="hp">♥♥♥</span></div>
-                <button id="toggle-debug">骨格表示: OFF</button>
+                <button id="toggle-camera">カメラ: ON</button>
             </div>
 
             <!-- アクション説明 -->

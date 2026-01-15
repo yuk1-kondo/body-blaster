@@ -21,10 +21,14 @@ class PoseDetector {
         this.debugMode = false;
     }
 
-    async init(videoElement, debugCanvas) {
+    async init(videoElement, cameraOverlayCanvas) {
         this.videoElement = videoElement;
-        this.debugCanvas = debugCanvas;
-        this.debugCtx = debugCanvas.getContext('2d');
+        this.cameraOverlayCanvas = cameraOverlayCanvas;
+        this.cameraOverlayCtx = cameraOverlayCanvas.getContext('2d');
+
+        // キャンバスサイズを設定
+        this.cameraOverlayCanvas.width = 640;
+        this.cameraOverlayCanvas.height = 480;
 
         // MediaPipe Pose 初期化
         this.pose = new Pose({
@@ -59,10 +63,8 @@ class PoseDetector {
     onResults(results) {
         this.results = results;
 
-        // デバッグ表示
-        if (this.debugMode && this.debugCanvas) {
-            this.drawDebug(results);
-        }
+        // カメラオーバーレイに常に骨格を描画
+        this.drawCameraOverlay(results);
 
         // ランドマークが検出されていない場合は終了
         if (!results.poseLandmarks) {
@@ -141,49 +143,48 @@ class PoseDetector {
         }
     }
 
-    drawDebug(results) {
-        const canvas = this.debugCanvas;
-        const ctx = this.debugCtx;
+    drawCameraOverlay(results) {
+        const canvas = this.cameraOverlayCanvas;
+        const ctx = this.cameraOverlayCtx;
 
         // キャンバスをクリア
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // カメラ映像を描画（反転）
-        ctx.save();
-        ctx.scale(-1, 1);
-        ctx.drawImage(results.image, -canvas.width, 0, canvas.width, canvas.height);
-        ctx.restore();
-
         // ポーズランドマークを描画
         if (results.poseLandmarks) {
+            // 骨格の線を描画
             drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
                 color: '#00FF00',
-                lineWidth: 2
-            });
-            drawLandmarks(ctx, results.poseLandmarks, {
-                color: '#FF0000',
-                lineWidth: 1,
-                radius: 3
+                lineWidth: 4
             });
 
-            // 重要なポイントを強調
-            const importantIndices = [15, 16, 23, 24]; // 手首、腰
+            // 関節点を描画
+            drawLandmarks(ctx, results.poseLandmarks, {
+                color: '#FF0000',
+                lineWidth: 2,
+                radius: 6
+            });
+
+            // 重要なポイントを強調（手首、腰）
+            const importantIndices = [15, 16, 23, 24];
             const importantLandmarks = importantIndices
                 .map(i => results.poseLandmarks[i])
                 .filter(lm => lm);
 
             drawLandmarks(ctx, importantLandmarks, {
                 color: '#FFFF00',
-                lineWidth: 2,
-                radius: 5
+                lineWidth: 3,
+                radius: 10
             });
         }
     }
 
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        if (this.debugCanvas) {
-            this.debugCanvas.classList.toggle('active', enabled);
+    setCameraPreviewVisible(visible) {
+        if (this.cameraOverlayCanvas) {
+            const preview = this.cameraOverlayCanvas.parentElement;
+            if (preview) {
+                preview.style.display = visible ? 'block' : 'none';
+            }
         }
     }
 
