@@ -170,7 +170,7 @@ class PoseDetector {
     }
 
     detectBomb(landmarks) {
-        // 両手を回す → チャージ、両手を上げる → ボム発動
+        // 両手を胸の前で合わせる → チャージ、両手を上げる → ボム発動
         const leftWrist = landmarks[15];
         const rightWrist = landmarks[16];
         const leftShoulder = landmarks[11];
@@ -179,38 +179,45 @@ class PoseDetector {
         if (!leftWrist || !rightWrist || !leftShoulder || !rightShoulder) return;
 
         const now = Date.now();
-        const deltaTime = (now - this.previousTime) / 1000; // 秒単位
 
-        // 両手の動きの速さを計算（回転を検出）
-        if (this.previousLeftWrist && this.previousRightWrist && deltaTime > 0) {
-            const leftSpeed = distance(leftWrist, this.previousLeftWrist) / deltaTime;
-            const rightSpeed = distance(rightWrist, this.previousRightWrist) / deltaTime;
-            const avgSpeed = (leftSpeed + rightSpeed) / 2;
+        // 両手首の距離
+        const handDistance = distance(leftWrist, rightWrist);
 
-            // 両手が速く動いている = チャージ中
-            if (avgSpeed > this.ROTATION_SPEED_THRESHOLD) {
-                if (!this.bombCharging) {
-                    this.bombCharging = true;
-                    this.chargeStartTime = now;
+        // 肩の中心X座標
+        const shoulderCenterX = (leftShoulder.x + rightShoulder.x) / 2;
+
+        // 両手の中心X座標
+        const handCenterX = (leftWrist.x + rightWrist.x) / 2;
+
+        // 両手が体の中心付近にあり、近くにある = 胸の前で合わせている
+        const handsClose = handDistance < 0.15; // 手が近い
+        const handsInCenter = Math.abs(handCenterX - shoulderCenterX) < 0.2; // 体の中心付近
+
+        if (handsClose && handsInCenter) {
+            // チャージ中
+            if (!this.bombCharging) {
+                this.bombCharging = true;
+                this.chargeStartTime = now;
+            }
+
+            // チャージ量を増やす（最大100）
+            const chargeTime = (now - this.chargeStartTime) / 1000;
+            this.bombChargeAmount = Math.min(100, chargeTime * 50); // 2秒で100%
+
+            // チャージ中のコールバック
+            if (this.callbacks.onBombCharge) {
+                this.callbacks.onBombCharge(this.bombChargeAmount);
+            }
+        } else {
+            // 手を離したらチャージ継続（リセットしない）
+            // ただし、チャージが完了していない場合は少しずつ減少
+            if (this.bombCharging && this.bombChargeAmount < 100) {
+                this.bombChargeAmount = Math.max(0, this.bombChargeAmount - 1);
+                if (this.bombChargeAmount === 0) {
+                    this.bombCharging = false;
                 }
-
-                // チャージ量を増やす（最大100）
-                const chargeTime = (now - this.chargeStartTime) / 1000;
-                this.bombChargeAmount = Math.min(100, chargeTime * 50); // 2秒で100%
-
-                // チャージ中のコールバック
                 if (this.callbacks.onBombCharge) {
                     this.callbacks.onBombCharge(this.bombChargeAmount);
-                }
-            } else {
-                // 動きが遅い場合、チャージをリセット
-                if (this.bombCharging && avgSpeed < this.ROTATION_SPEED_THRESHOLD / 2) {
-                    this.bombCharging = false;
-                    this.bombChargeAmount = 0;
-
-                    if (this.callbacks.onBombCharge) {
-                        this.callbacks.onBombCharge(0);
-                    }
                 }
             }
         }
@@ -233,8 +240,6 @@ class PoseDetector {
                 this.callbacks.onBombCharge(0);
             }
         }
-
-        this.previousTime = now;
     }
 
     drawCameraOverlay(results) {
