@@ -108,17 +108,20 @@ class PoseDetector {
     }
 
     detectFire(landmarks) {
-        // 両手首のZ座標（奥行き）
+        // 片手を上げる → 発射
         const leftWrist = landmarks[15]; // LEFT_WRIST
         const rightWrist = landmarks[16]; // RIGHT_WRIST
+        const leftShoulder = landmarks[11]; // LEFT_SHOULDER
+        const rightShoulder = landmarks[12]; // RIGHT_SHOULDER
 
-        if (!leftWrist || !rightWrist) return;
+        if (!leftWrist || !rightWrist || !leftShoulder || !rightShoulder) return;
 
-        // 両手の平均Z座標
-        const avgZ = (leftWrist.z + rightWrist.z) / 2;
+        // 手首が肩より上にあるかチェック（Y座標は上が小さい）
+        const leftHandRaised = leftWrist.y < leftShoulder.y - 0.1; // 余裕を持たせる
+        const rightHandRaised = rightWrist.y < rightShoulder.y - 0.1;
 
-        // Z座標が閾値より小さい（前に出している）場合
-        if (avgZ < this.FIRE_THRESHOLD) {
+        // 片手でも上がっていれば発射（両手上げはボムなので除外）
+        if ((leftHandRaised || rightHandRaised) && !(leftHandRaised && rightHandRaised)) {
             if (this.callbacks.onFire) {
                 this.callbacks.onFire();
             }
@@ -126,17 +129,20 @@ class PoseDetector {
     }
 
     detectBomb(landmarks) {
-        // 両手首の距離
+        // 両手を上げる → ボム
         const leftWrist = landmarks[15];
         const rightWrist = landmarks[16];
+        const leftShoulder = landmarks[11];
+        const rightShoulder = landmarks[12];
 
-        if (!leftWrist || !rightWrist) return;
+        if (!leftWrist || !rightWrist || !leftShoulder || !rightShoulder) return;
 
-        // 正規化された距離を計算
-        const dist = distance(leftWrist, rightWrist);
+        // 両手が肩より上にあるかチェック
+        const leftHandRaised = leftWrist.y < leftShoulder.y - 0.1;
+        const rightHandRaised = rightWrist.y < rightShoulder.y - 0.1;
 
-        // 距離が閾値より大きい（両手を広げている）場合
-        if (dist > this.BOMB_THRESHOLD) {
+        // 両手を上げている場合はボム（バンザイ！）
+        if (leftHandRaised && rightHandRaised) {
             if (this.callbacks.onBomb) {
                 this.callbacks.onBomb();
             }
