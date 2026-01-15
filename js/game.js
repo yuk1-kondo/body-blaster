@@ -77,9 +77,15 @@ class Game {
                 }
             });
 
-            this.poseDetector.on('onBomb', () => {
+            this.poseDetector.on('onBombCharge', (chargeAmount) => {
+                if (this.state === 'playing' && this.player) {
+                    this.player.setBombCharge(chargeAmount);
+                }
+            });
+
+            this.poseDetector.on('onBomb', (chargeAmount) => {
                 if (this.state === 'playing' && this.player && !this.isBombing) {
-                    const activated = this.player.activateBomb();
+                    const activated = this.player.activateBomb(chargeAmount);
                     if (activated) {
                         // ボム発動時、画面上の敵をすべて破壊
                         this.enemyManager.getActiveEnemies().forEach(enemy => {

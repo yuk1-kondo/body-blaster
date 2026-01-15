@@ -9,13 +9,29 @@ class PoseDetector {
             onPoseDetected: null,
             onMove: null,
             onFire: null,
-            onBomb: null
+            onBomb: null,
+            onBombCharge: null
         };
 
         // 閾値
-        this.FIRE_THRESHOLD = -0.1; // 手のZ座標（前に出す）
-        this.BOMB_THRESHOLD = 0.5; // 両手の距離（正規化）
+        this.HEAD_TILT_THRESHOLD = 0.05; // 首の傾き
+        this.FLAP_THRESHOLD = 0.08; // 羽ばたき（手の上下動）
+        this.ROTATION_SPEED_THRESHOLD = 0.15; // 手の回転速度
         this.DEADZONE = 0.03; // デッドゾーン
+
+        // 前フレームのデータ
+        this.previousLeftWrist = null;
+        this.previousRightWrist = null;
+        this.previousTime = Date.now();
+
+        // 羽ばたき検出
+        this.flapDirection = 0; // -1: 下がっている, 0: なし, 1: 上がっている
+        this.lastFlapTime = 0;
+
+        // ボムチャージ
+        this.bombCharging = false;
+        this.bombChargeAmount = 0;
+        this.chargeStartTime = 0;
 
         // デバッグ表示
         this.debugMode = false;
@@ -89,17 +105,23 @@ class PoseDetector {
     }
 
     detectMovement(landmarks) {
-        // 腰の中心位置を取得
-        const leftHip = landmarks[23]; // LEFT_HIP
-        const rightHip = landmarks[24]; // RIGHT_HIP
+        // 首の傾きで左右移動
+        const nose = landmarks[0]; // NOSE
+        const leftShoulder = landmarks[11]; // LEFT_SHOULDER
+        const rightShoulder = landmarks[12]; // RIGHT_SHOULDER
 
-        if (!leftHip || !rightHip) return;
+        if (!nose || !leftShoulder || !rightShoulder) return;
 
-        const centerX = (leftHip.x + rightHip.x) / 2;
+        // 肩の中心を計算
+        const shoulderCenterX = (leftShoulder.x + rightShoulder.x) / 2;
 
-        // 0.3 ~ 0.7 の範囲を 0.0 ~ 1.0 にマッピング
-        // （カメラの中央付近でプレイすることを想定）
-        const normalizedX = map(centerX, 0.3, 0.7, 0, 1);
+        // 鼻が肩の中心からどれだけ離れているか（傾き）
+        const tilt = nose.x - shoulderCenterX;
+
+        // 傾きを 0.0 ~ 1.0 にマッピング
+        // 左に傾ける（tilt < 0）→ 0に近づく
+        // 右に傾ける（tilt > 0）→ 1に近づく
+        const normalizedX = map(tilt, -0.15, 0.15, 0, 1);
         const clampedX = clamp(normalizedX, 0, 1);
 
         if (this.callbacks.onMove) {
@@ -108,28 +130,47 @@ class PoseDetector {
     }
 
     detectFire(landmarks) {
-        // 片手を上げる → 発射
+        // 両手を羽ばたかせる → 発射
         const leftWrist = landmarks[15]; // LEFT_WRIST
         const rightWrist = landmarks[16]; // RIGHT_WRIST
-        const leftShoulder = landmarks[11]; // LEFT_SHOULDER
-        const rightShoulder = landmarks[12]; // RIGHT_SHOULDER
 
-        if (!leftWrist || !rightWrist || !leftShoulder || !rightShoulder) return;
+        if (!leftWrist || !rightWrist) return;
 
-        // 手首が肩より上にあるかチェック（Y座標は上が小さい）
-        const leftHandRaised = leftWrist.y < leftShoulder.y - 0.1; // 余裕を持たせる
-        const rightHandRaised = rightWrist.y < rightShoulder.y - 0.1;
+        // 前フレームの手の位置を保存
+        if (this.previousLeftWrist && this.previousRightWrist) {
+            // 手の上下動を計算
+            const leftDeltaY = leftWrist.y - this.previousLeftWrist.y;
+            const rightDeltaY = rightWrist.y - this.previousRightWrist.y;
+            const avgDeltaY = (leftDeltaY + rightDeltaY) / 2;
 
-        // 片手でも上がっていれば発射（両手上げはボムなので除外）
-        if ((leftHandRaised || rightHandRaised) && !(leftHandRaised && rightHandRaised)) {
-            if (this.callbacks.onFire) {
-                this.callbacks.onFire();
+            const now = Date.now();
+
+            // 羽ばたき検出：両手が同時に上下に動いているか
+            if (Math.abs(avgDeltaY) > this.FLAP_THRESHOLD) {
+                const newDirection = avgDeltaY < 0 ? 1 : -1; // 上に動く=1, 下に動く=-1
+
+                // 方向が切り替わった時（上→下、または下→上）に発射
+                if (this.flapDirection !== 0 && this.flapDirection !== newDirection) {
+                    // 連射制限（100ms）
+                    if (now - this.lastFlapTime > 100) {
+                        if (this.callbacks.onFire) {
+                            this.callbacks.onFire();
+                        }
+                        this.lastFlapTime = now;
+                    }
+                }
+
+                this.flapDirection = newDirection;
             }
         }
+
+        // 現在のフレームを保存
+        this.previousLeftWrist = { x: leftWrist.x, y: leftWrist.y, z: leftWrist.z };
+        this.previousRightWrist = { x: rightWrist.x, y: rightWrist.y, z: rightWrist.z };
     }
 
     detectBomb(landmarks) {
-        // 両手を上げる → ボム
+        // 両手を回す → チャージ、両手を上げる → ボム発動
         const leftWrist = landmarks[15];
         const rightWrist = landmarks[16];
         const leftShoulder = landmarks[11];
@@ -137,16 +178,63 @@ class PoseDetector {
 
         if (!leftWrist || !rightWrist || !leftShoulder || !rightShoulder) return;
 
-        // 両手が肩より上にあるかチェック
+        const now = Date.now();
+        const deltaTime = (now - this.previousTime) / 1000; // 秒単位
+
+        // 両手の動きの速さを計算（回転を検出）
+        if (this.previousLeftWrist && this.previousRightWrist && deltaTime > 0) {
+            const leftSpeed = distance(leftWrist, this.previousLeftWrist) / deltaTime;
+            const rightSpeed = distance(rightWrist, this.previousRightWrist) / deltaTime;
+            const avgSpeed = (leftSpeed + rightSpeed) / 2;
+
+            // 両手が速く動いている = チャージ中
+            if (avgSpeed > this.ROTATION_SPEED_THRESHOLD) {
+                if (!this.bombCharging) {
+                    this.bombCharging = true;
+                    this.chargeStartTime = now;
+                }
+
+                // チャージ量を増やす（最大100）
+                const chargeTime = (now - this.chargeStartTime) / 1000;
+                this.bombChargeAmount = Math.min(100, chargeTime * 50); // 2秒で100%
+
+                // チャージ中のコールバック
+                if (this.callbacks.onBombCharge) {
+                    this.callbacks.onBombCharge(this.bombChargeAmount);
+                }
+            } else {
+                // 動きが遅い場合、チャージをリセット
+                if (this.bombCharging && avgSpeed < this.ROTATION_SPEED_THRESHOLD / 2) {
+                    this.bombCharging = false;
+                    this.bombChargeAmount = 0;
+
+                    if (this.callbacks.onBombCharge) {
+                        this.callbacks.onBombCharge(0);
+                    }
+                }
+            }
+        }
+
+        // 両手を上げている = ボム発動
         const leftHandRaised = leftWrist.y < leftShoulder.y - 0.1;
         const rightHandRaised = rightWrist.y < rightShoulder.y - 0.1;
 
-        // 両手を上げている場合はボム（バンザイ！）
-        if (leftHandRaised && rightHandRaised) {
+        if (leftHandRaised && rightHandRaised && this.bombChargeAmount >= 50) {
+            // チャージが50%以上でボム発動
             if (this.callbacks.onBomb) {
-                this.callbacks.onBomb();
+                this.callbacks.onBomb(this.bombChargeAmount);
+            }
+
+            // チャージをリセット
+            this.bombCharging = false;
+            this.bombChargeAmount = 0;
+
+            if (this.callbacks.onBombCharge) {
+                this.callbacks.onBombCharge(0);
             }
         }
+
+        this.previousTime = now;
     }
 
     drawCameraOverlay(results) {

@@ -19,8 +19,7 @@ class Player {
         this.fireInterval = 10; // フレーム数
 
         // ボム制御
-        this.bombCooldown = 0;
-        this.bombCooldownMax = 180; // 3秒（60fps想定）
+        this.bombCharge = 0; // チャージ量（0-100）
         this.bombActive = false;
         this.bombDuration = 0;
         this.bombDurationMax = 60; // 1秒
@@ -80,12 +79,17 @@ class Player {
         }
     }
 
+    // ボムチャージを設定
+    setBombCharge(charge) {
+        this.bombCharge = charge;
+    }
+
     // ボム発動
-    activateBomb() {
-        if (this.bombCooldown === 0 && !this.bombActive) {
+    activateBomb(chargeAmount) {
+        if (!this.bombActive && this.bombCharge >= 50) {
             this.bombActive = true;
             this.bombDuration = 0;
-            this.bombCooldown = this.bombCooldownMax;
+            this.bombCharge = 0; // チャージをリセット
             return true;
         }
         return false;
@@ -135,15 +139,24 @@ class Player {
 
         ctx.shadowBlur = 0;
 
-        // ボムクールダウンバー
-        if (this.bombCooldown > 0) {
+        // ボムチャージバー
+        if (this.bombCharge > 0) {
             const barWidth = this.width;
-            const barHeight = 3;
-            const ratio = 1 - (this.bombCooldown / this.bombCooldownMax);
+            const barHeight = 5;
+            const ratio = this.bombCharge / 100;
+
+            // 背景
             ctx.fillStyle = '#444';
-            ctx.fillRect(this.x, this.y - 10, barWidth, barHeight);
-            ctx.fillStyle = '#ffff00';
-            ctx.fillRect(this.x, this.y - 10, barWidth * ratio, barHeight);
+            ctx.fillRect(this.x, this.y - 12, barWidth, barHeight);
+
+            // チャージゲージ（50%以上で緑、未満で黄色）
+            ctx.fillStyle = this.bombCharge >= 50 ? '#00ff00' : '#ffff00';
+            ctx.fillRect(this.x, this.y - 12, barWidth * ratio, barHeight);
+
+            // ボーダー
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(this.x, this.y - 12, barWidth, barHeight);
         }
     }
 
@@ -165,7 +178,7 @@ class Player {
         this.hp = this.maxHp;
         this.active = true;
         this.fireTimer = 0;
-        this.bombCooldown = 0;
+        this.bombCharge = 0;
         this.bombActive = false;
         this.bombDuration = 0;
         this.invincible = false;
