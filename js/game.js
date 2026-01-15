@@ -31,10 +31,16 @@ class Game {
         this.bulletManager = new BulletManager();
         this.enemyManager = new EnemyManager();
         this.poseDetector = new PoseDetector();
+        this.effectManager = new EffectManager();
 
         // 発射状態管理（連続発射を防ぐ）
         this.isFiring = false;
         this.isBombing = false;
+
+        // 背景演出
+        this.starField = this.createStarField(140);
+        this.starOffset = 0;
+        this.lastFrameTime = performance.now();
 
         // イベントリスナー設定
         this.setupEventListeners();
@@ -53,6 +59,7 @@ class Game {
     resizeCanvas() {
         this.gameCanvas.width = window.innerWidth;
         this.gameCanvas.height = window.innerHeight;
+        this.starField = this.createStarField(140);
     }
 
     async startGame() {
@@ -92,6 +99,13 @@ class Game {
                             enemy.active = false;
                             this.score += 100;
                         });
+                        const center = this.player.getCenter();
+                        this.effectManager.spawnBombWave(
+                            center.x,
+                            center.y,
+                            this.gameCanvas.width,
+                            this.gameCanvas.height
+                        );
                     }
                     this.isBombing = true;
                 }
@@ -101,6 +115,7 @@ class Game {
             this.gameScreen.style.display = 'block';
             this.initGame();
             this.state = 'playing';
+            this.lastFrameTime = performance.now();
             this.gameLoop();
 
         } catch (error) {
@@ -116,6 +131,10 @@ class Game {
         this.player = new Player(this.gameCanvas.width, this.gameCanvas.height);
         this.bulletManager.clear();
         this.enemyManager.clear();
+        this.effectManager = new EffectManager();
+        this.starOffset = 0;
+        this.isFiring = false;
+        this.isBombing = false;
         this.updateUI();
     }
 
@@ -124,6 +143,8 @@ class Game {
         this.gameScreen.style.display = 'block';
         this.initGame();
         this.state = 'playing';
+        this.lastFrameTime = performance.now();
+        this.gameLoop();
     }
 
     toggleCamera() {
@@ -134,13 +155,16 @@ class Game {
 
     gameLoop() {
         if (this.state === 'playing') {
-            this.update();
+            const now = performance.now();
+            const delta = Math.min(0.05, (now - this.lastFrameTime) / 1000);
+            this.lastFrameTime = now;
+            this.update(delta);
             this.draw();
             requestAnimationFrame(() => this.gameLoop());
         }
     }
 
-    update() {
+    update(delta) {
         // プレイヤー更新
         this.player.update();
 
@@ -156,6 +180,13 @@ class Game {
                 if (checkCollision(bullet.getBounds(), enemy.getBounds())) {
                     bullet.active = false;
                     const destroyed = enemy.hit();
+                    const enemyCenter = enemy.getCenter();
+                    if (destroyed) {
+                        const color = enemy.type === 'strong' ? '#b99bff' : '#ff7a85';
+                        this.effectManager.spawnExplosion(enemyCenter.x, enemyCenter.y, color, enemy.type === 'strong' ? 1.3 : 1);
+                    } else {
+                        this.effectManager.spawnHitSpark(enemyCenter.x, enemyCenter.y, '#ffd479');
+                    }
                     if (destroyed) {
                         this.score += enemy.type === 'strong' ? 50 : 10;
                         this.updateUI();
@@ -171,6 +202,9 @@ class Game {
                     enemy.active = false;
                     this.player.takeDamage();
                     this.updateUI();
+                    const center = this.player.getCenter();
+                    this.effectManager.spawnHitSpark(center.x, center.y, '#9afcff');
+                    this.effectManager.startShake(8, 0.15);
 
                     // ゲームオーバーチェック
                     if (!this.player.active) {
@@ -196,33 +230,80 @@ class Game {
         if (this.isBombing) {
             setTimeout(() => { this.isBombing = false; }, 500);
         }
+
+        // 背景演出
+        this.starOffset += delta * 18;
+        this.effectManager.update(delta);
     }
 
     draw() {
         const ctx = this.gameCtx;
 
-        // 背景をクリア（宇宙風の背景）
-        ctx.fillStyle = '#0a0a1a';
-        ctx.fillRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+        const offset = this.effectManager.getShakeOffset();
+        ctx.save();
+        ctx.translate(offset.x, offset.y);
 
-        // 星を描画（簡易版）
+        // 背景を描画
+        this.drawBackground(ctx);
         this.drawStars(ctx);
 
         // ゲームオブジェクト描画
         this.bulletManager.draw(ctx);
         this.enemyManager.draw(ctx);
         this.player.draw(ctx);
+        this.effectManager.draw(ctx);
+        ctx.restore();
+
+        // フラッシュ等のオーバーレイ
+        this.effectManager.drawOverlay(ctx, this.gameCanvas.width, this.gameCanvas.height);
+    }
+
+    drawBackground(ctx) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, this.gameCanvas.height);
+        gradient.addColorStop(0, '#070b1f');
+        gradient.addColorStop(0.5, '#0c1440');
+        gradient.addColorStop(1, '#05080f');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+
+        const glow = ctx.createRadialGradient(
+            this.gameCanvas.width * 0.8,
+            this.gameCanvas.height * 0.2,
+            0,
+            this.gameCanvas.width * 0.8,
+            this.gameCanvas.height * 0.2,
+            this.gameCanvas.width * 0.6
+        );
+        glow.addColorStop(0, 'rgba(90, 170, 255, 0.25)');
+        glow.addColorStop(1, 'rgba(10, 12, 20, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
     }
 
     drawStars(ctx) {
-        // 簡易的な星の描画
+        ctx.save();
         ctx.fillStyle = '#ffffff';
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 123) % this.gameCanvas.width;
-            const y = (i * 456 + Date.now() * 0.01) % this.gameCanvas.height;
-            const size = (i % 3) + 1;
-            ctx.fillRect(x, y, size, size);
+        this.starField.forEach(star => {
+            const y = (star.y + this.starOffset * star.speed) % this.gameCanvas.height;
+            ctx.globalAlpha = star.alpha + Math.sin((this.starOffset + star.seed) * 0.02) * 0.2;
+            ctx.fillRect(star.x, y, star.size, star.size);
+        });
+        ctx.restore();
+    }
+
+    createStarField(count) {
+        const stars = [];
+        for (let i = 0; i < count; i++) {
+            stars.push({
+                x: Math.random() * this.gameCanvas.width,
+                y: Math.random() * this.gameCanvas.height,
+                size: Math.random() * 2 + 0.5,
+                alpha: Math.random() * 0.8 + 0.2,
+                speed: Math.random() * 0.6 + 0.2,
+                seed: Math.random() * 1000
+            });
         }
+        return stars;
     }
 
     updateUI() {

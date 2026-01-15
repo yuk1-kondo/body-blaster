@@ -5,9 +5,10 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    font-family: 'Noto Sans JP', 'Helvetica Neue', Arial, sans-serif;
+    background: radial-gradient(circle at top, rgba(64, 118, 255, 0.35), transparent 45%),
+        linear-gradient(140deg, #0b1026 0%, #070a16 45%, #0d0f1c 100%);
+    color: #f4f7ff;
     overflow: hidden;
     height: 100vh;
     display: flex;
@@ -27,29 +28,34 @@ body {
 /* タイトル画面 */
 #title-screen {
     text-align: center;
-    padding: 2rem;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    max-width: 600px;
+    padding: 2.5rem 3rem;
+    background: rgba(12, 16, 32, 0.7);
+    border-radius: 28px;
+    border: 1px solid rgba(130, 160, 255, 0.25);
+    box-shadow: 0 30px 80px rgba(3, 6, 18, 0.6);
+    backdrop-filter: blur(18px);
+    max-width: 640px;
 }
 
 #title-screen h1 {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+    font-size: 3.8rem;
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 24px rgba(120, 170, 255, 0.6);
 }
 
 .tagline {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     margin-bottom: 2rem;
-    opacity: 0.9;
+    opacity: 0.85;
 }
 
 .controls-info {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(20, 30, 60, 0.7);
     padding: 1.5rem;
-    border-radius: 10px;
+    border-radius: 18px;
+    border: 1px solid rgba(120, 160, 255, 0.2);
     margin-bottom: 2rem;
     text-align: left;
 }
@@ -57,6 +63,7 @@ body {
 .controls-info h3 {
     margin-bottom: 1rem;
     text-align: center;
+    font-weight: 600;
 }
 
 .controls-info ul {
@@ -65,24 +72,26 @@ body {
 
 .controls-info li {
     padding: 0.5rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 button {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
+    background: linear-gradient(135deg, #7af7ff 0%, #6b8cff 45%, #b66cff 100%);
+    color: #070a16;
     border: none;
-    padding: 1rem 3rem;
-    font-size: 1.5rem;
-    border-radius: 50px;
+    padding: 0.9rem 2.8rem;
+    font-size: 1.2rem;
+    border-radius: 999px;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     font-weight: bold;
+    letter-spacing: 0.05em;
+    box-shadow: 0 12px 30px rgba(90, 130, 255, 0.35);
 }
 
 button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 16px 36px rgba(120, 180, 255, 0.5);
 }
 
 button:active {
@@ -91,8 +100,8 @@ button:active {
 
 .info {
     margin-top: 1rem;
-    font-size: 0.9rem;
-    opacity: 0.7;
+    font-size: 0.85rem;
+    opacity: 0.65;
 }
 
 /* ゲーム画面 */
@@ -109,10 +118,10 @@ button:active {
     right: 20px;
     width: 240px;
     height: 180px;
-    border: 3px solid rgba(255, 255, 255, 0.5);
-    border-radius: 15px;
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(120, 160, 255, 0.5);
+    border-radius: 16px;
+    background: rgba(6, 8, 18, 0.6);
+    box-shadow: 0 10px 30px rgba(3, 6, 18, 0.6);
     z-index: 100;
     overflow: hidden;
 }
@@ -142,9 +151,9 @@ button:active {
     left: 10px;
     width: 320px;
     height: 240px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(120, 160, 255, 0.3);
+    border-radius: 12px;
+    background: rgba(8, 12, 24, 0.6);
     display: none;
 }
 
@@ -164,7 +173,7 @@ button:active {
     top: 0;
     left: 0;
     width: 100%;
-    padding: 20px;
+    padding: 20px 24px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -176,19 +185,23 @@ button:active {
 }
 
 #score-display, #hp-display {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(10, 14, 30, 0.8);
     padding: 10px 20px;
-    border-radius: 10px;
-    font-size: 1.5rem;
+    border-radius: 14px;
+    border: 1px solid rgba(120, 160, 255, 0.25);
+    font-size: 1.3rem;
     font-weight: bold;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(4, 8, 20, 0.5);
 }
 
 #toggle-camera {
-    padding: 8px 15px;
-    font-size: 0.9rem;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    background: rgba(10, 14, 30, 0.8);
+    color: #f4f7ff;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 20px rgba(4, 8, 20, 0.4);
 }
 
 /* アクション説明 */
@@ -196,11 +209,11 @@ button:active {
     position: absolute;
     top: 80px;
     left: 20px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(10, 14, 30, 0.75);
     padding: 15px 20px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(120, 160, 255, 0.25);
     z-index: 50;
     min-width: 220px;
 }
@@ -209,8 +222,8 @@ button:active {
     margin: 0 0 12px 0;
     font-size: 1rem;
     text-align: center;
-    color: #fff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    color: #f4f7ff;
+    border-bottom: 1px solid rgba(120, 160, 255, 0.3);
     padding-bottom: 8px;
 }
 
@@ -230,7 +243,7 @@ button:active {
 
 .action-text {
     font-size: 0.9rem;
-    color: #ffffff;
+    color: #d7defa;
     flex: 1;
 }
 
@@ -238,20 +251,23 @@ button:active {
 #gameover-screen {
     text-align: center;
     padding: 2rem;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
+    background: rgba(12, 16, 32, 0.8);
+    border-radius: 26px;
+    border: 1px solid rgba(120, 160, 255, 0.25);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 26px 70px rgba(4, 8, 22, 0.6);
 }
 
 #gameover-screen h1 {
-    font-size: 4rem;
+    font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+    font-size: 3.5rem;
     margin-bottom: 2rem;
-    color: #ff6b6b;
-    text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    color: #ff9fb4;
+    text-shadow: 0 0 24px rgba(255, 140, 180, 0.6);
 }
 
 .final-score {
-    font-size: 2rem;
+    font-size: 1.8rem;
     margin-bottom: 2rem;
 }
 
