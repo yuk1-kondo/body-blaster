@@ -9,6 +9,7 @@ class Game {
         this.startButton = document.getElementById('start-button');
         this.restartButton = document.getElementById('restart-button');
         this.toggleCameraButton = document.getElementById('toggle-camera');
+        this.toggleRecordingButton = document.getElementById('toggle-recording');
 
         // キャンバス
         this.gameCanvas = document.getElementById('game-canvas');
@@ -19,6 +20,11 @@ class Game {
         this.video = document.getElementById('camera-video');
         this.cameraPreview = document.getElementById('camera-preview');
         this.cameraVisible = true;
+
+        // 録画
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.isRecording = false;
 
         // ゲーム状態
         this.state = 'title'; // title, playing, gameover
@@ -54,6 +60,7 @@ class Game {
         this.startButton.addEventListener('click', () => this.startGame());
         this.restartButton.addEventListener('click', () => this.restartGame());
         this.toggleCameraButton.addEventListener('click', () => this.toggleCamera());
+        this.toggleRecordingButton.addEventListener('click', () => this.toggleRecording());
     }
 
     resizeCanvas() {
@@ -162,6 +169,84 @@ class Game {
         this.cameraVisible = !this.cameraVisible;
         this.cameraPreview.style.display = this.cameraVisible ? 'block' : 'none';
         this.toggleCameraButton.textContent = `カメラ: ${this.cameraVisible ? 'ON' : 'OFF'}`;
+    }
+
+    toggleRecording() {
+        if (this.isRecording) {
+            this.stopRecording();
+        } else {
+            this.startRecording();
+        }
+    }
+
+    startRecording() {
+        // カメラのストリームを録画
+        if (!this.video.srcObject) {
+            alert('カメラが起動していません');
+            return;
+        }
+
+        this.recordedChunks = [];
+
+        try {
+            // MediaRecorderの作成（優先順位でコーデックを選択）
+            const options = { mimeType: 'video/webm;codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'video/webm;codecs=vp8';
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options.mimeType = 'video/webm';
+                }
+            }
+
+            this.mediaRecorder = new MediaRecorder(this.video.srcObject, options);
+
+            // データが利用可能になったときの処理
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+
+            // 録画停止時の処理
+            this.mediaRecorder.onstop = () => {
+                this.downloadRecording();
+            };
+
+            // 録画開始
+            this.mediaRecorder.start(100); // 100msごとにデータを保存
+            this.isRecording = true;
+            this.toggleRecordingButton.textContent = '⏹ 停止';
+            this.toggleRecordingButton.style.backgroundColor = '#ff4444';
+
+        } catch (error) {
+            console.error('録画の開始に失敗:', error);
+            alert('録画の開始に失敗しました: ' + error.message);
+        }
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.isRecording) {
+            this.mediaRecorder.stop();
+            this.isRecording = false;
+            this.toggleRecordingButton.textContent = '⏺ 録画';
+            this.toggleRecordingButton.style.backgroundColor = '';
+        }
+    }
+
+    downloadRecording() {
+        const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        a.download = `body-blaster-${timestamp}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 
     gameLoop() {
