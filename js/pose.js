@@ -34,10 +34,11 @@ class PoseDetector {
         this.bombChargeAmount = 0;
         this.chargeStartTime = 0;
 
-        // パンチ検出
+        // パンチ検出（片手振り）
         this.punchActive = false;
         this.lastPunchTime = 0;
-        this.punchCooldown = 500; // クールダウン（ミリ秒）
+        this.punchCooldown = 10000; // クールダウン10秒
+        this.lastWaveX = null; // 前回の手首x座標
 
         // デバッグ表示
         this.debugMode = false;
@@ -258,39 +259,52 @@ class PoseDetector {
     }
 
     detectPunch(landmarks) {
-        // 両手を前に突き出す（パンチポーズ）
+        // 片手を振る動作を検出
         const leftWrist = landmarks[15];
         const rightWrist = landmarks[16];
-        const leftElbow = landmarks[13];
-        const rightElbow = landmarks[14];
 
-        if (!leftWrist || !rightWrist || !leftElbow || !rightElbow) return;
+        if (!leftWrist || !rightWrist) return;
 
         const now = Date.now();
 
-        // 両手首が肘より前にある（z座標が小さい）
-        // MediaPipeのz座標：小さい値ほど手前（カメラに近い）
-        const PUNCH_THRESHOLD = -0.2; // 手前にある閾値
+        // 両手首のx座標を取得（どちらか大きく動いた方を使う）
+        const currentLeftX = leftWrist.x;
+        const currentRightX = rightWrist.x;
 
-        const leftPunching = leftWrist.z < PUNCH_THRESHOLD;
-        const rightPunching = rightWrist.z < PUNCH_THRESHOLD;
-
-        // 両手が前にある = パンチポーズ
-        if (leftPunching && rightPunching && !this.punchActive) {
+        if (this.lastWaveX !== null && !this.punchActive) {
             // クールダウンチェック
             if (now - this.lastPunchTime > this.punchCooldown) {
-                this.punchActive = true;
-                this.lastPunchTime = now;
+                // x座標の変化量を計算
+                const leftDelta = Math.abs(currentLeftX - this.lastWaveX.left);
+                const rightDelta = Math.abs(currentRightX - this.lastWaveX.right);
 
-                // パンチコールバック
-                if (this.callbacks.onPunch) {
-                    this.callbacks.onPunch();
+                // どちらかの手が大きく動いた（閾値0.3以上）
+                const WAVE_THRESHOLD = 0.3;
+
+                if (leftDelta > WAVE_THRESHOLD || rightDelta > WAVE_THRESHOLD) {
+                    this.punchActive = true;
+                    this.lastPunchTime = now;
+
+                    // パンチコールバック
+                    if (this.callbacks.onPunch) {
+                        this.callbacks.onPunch();
+                    }
                 }
             }
-        } else if (!leftPunching || !rightPunching) {
-            // どちらかの手が下がったらリセット
-            this.punchActive = false;
         }
+
+        // 前回の座標を保存
+        this.lastWaveX = {
+            left: currentLeftX,
+            right: currentRightX
+        };
+
+        // 少し待ってからリセット
+        setTimeout(() => {
+            if (this.punchActive && Date.now() - this.lastPunchTime > 500) {
+                this.punchActive = false;
+            }
+        }, 500);
     }
 
     drawCameraOverlay(results) {
@@ -362,5 +376,6 @@ class PoseDetector {
         // パンチ検出をリセット
         this.punchActive = false;
         this.lastPunchTime = 0;
+        this.lastWaveX = null;
     }
 }
