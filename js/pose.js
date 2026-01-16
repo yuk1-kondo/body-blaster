@@ -126,12 +126,12 @@ class PoseDetector {
         }
 
         // 傾きを移動速度に変換（十字キー風）
-        // 右に傾ける（tilt > 0）→ 正の速度（右移動）
-        // 左に傾ける（tilt < 0）→ 負の速度（左移動）
-        const MOVE_SPEED = 60; // 速度倍率
+        // 右に傾ける（tilt > 0）→ 負の速度（左移動）
+        // 左に傾ける（tilt < 0）→ 正の速度（右移動）
+        const MOVE_SPEED = 180; // 速度倍率（3倍に増加）
 
         if (this.callbacks.onMove) {
-            this.callbacks.onMove(tilt * MOVE_SPEED);
+            this.callbacks.onMove(-tilt * MOVE_SPEED);
         }
     }
 
