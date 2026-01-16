@@ -6,7 +6,7 @@ class Enemy {
         this.y = y;
         this.width = 30;
         this.height = 30;
-        this.speed = 1.5;
+        this.speed = 3.0; // 1.5 → 3.0に倍増
         this.type = type;
         this.active = true;
 
@@ -184,7 +184,7 @@ class EnemyManager {
     constructor() {
         this.enemies = [];
         this.spawnTimer = 0;
-        this.spawnInterval = 120; // フレーム数
+        this.spawnInterval = 60; // 120 → 60に半減（2秒→1秒）
         this.bulletManager = null; // 敵弾用のマネージャー
     }
 
