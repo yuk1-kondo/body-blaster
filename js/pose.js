@@ -121,7 +121,7 @@ class PoseDetector {
         // 傾きを 0.0 ~ 1.0 にマッピング
         // 左に傾ける（tilt < 0）→ 1に近づく（画面左側）
         // 右に傾ける（tilt > 0）→ 0に近づく（画面右側）
-        const normalizedX = map(tilt, -0.25, 0.25, 1, 0);
+        const normalizedX = map(tilt, -0.4, 0.4, 1, 0);
         const clampedX = clamp(normalizedX, 0, 1);
 
         if (this.callbacks.onMove) {
