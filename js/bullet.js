@@ -1,7 +1,7 @@
 // 弾丸クラス
 
 class Bullet {
-    constructor(x, y) {
+    constructor(x, y, angle = 0) {
         this.x = x;
         this.y = y;
         this.width = 4;
@@ -9,13 +9,17 @@ class Bullet {
         this.speed = 8;
         this.active = true;
         this.isEnemyBullet = false;
+        this.angle = angle; // 発射角度（ラジアン）
+        this.vx = Math.sin(angle) * this.speed;
+        this.vy = -Math.cos(angle) * this.speed;
     }
 
     update() {
-        this.y -= this.speed;
+        this.x += this.vx;
+        this.y += this.vy;
 
         // 画面外に出たら非アクティブ化
-        if (this.y + this.height < 0) {
+        if (this.y < -50 || this.x < -50 || this.x > window.innerWidth + 50) {
             this.active = false;
         }
     }
@@ -92,6 +96,14 @@ class BulletManager {
 
     addEnemyBullet(x, y) {
         this.enemyBullets.push(new EnemyBullet(x, y));
+    }
+
+    // 拡散弾（3方向）
+    addSpreadShot(x, y) {
+        const SPREAD_ANGLE = Math.PI / 6; // 30度
+        this.bullets.push(new Bullet(x, y, -SPREAD_ANGLE)); // 左斜め
+        this.bullets.push(new Bullet(x, y, 0));              // 真ん中
+        this.bullets.push(new Bullet(x, y, SPREAD_ANGLE));  // 右斜め
     }
 
     update() {

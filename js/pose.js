@@ -10,7 +10,8 @@ class PoseDetector {
             onMove: null,
             onFire: null,
             onBomb: null,
-            onBombCharge: null
+            onBombCharge: null,
+            onPunch: null
         };
 
         // 閾値
@@ -32,6 +33,11 @@ class PoseDetector {
         this.bombCharging = false;
         this.bombChargeAmount = 0;
         this.chargeStartTime = 0;
+
+        // パンチ検出
+        this.punchActive = false;
+        this.lastPunchTime = 0;
+        this.punchCooldown = 500; // クールダウン（ミリ秒）
 
         // デバッグ表示
         this.debugMode = false;
@@ -99,6 +105,9 @@ class PoseDetector {
 
         // 発射の検出
         this.detectFire(landmarks);
+
+        // パンチの検出
+        this.detectPunch(landmarks);
 
         // ボムの検出
         this.detectBomb(landmarks);
@@ -248,6 +257,42 @@ class PoseDetector {
         }
     }
 
+    detectPunch(landmarks) {
+        // 両手を前に突き出す（パンチポーズ）
+        const leftWrist = landmarks[15];
+        const rightWrist = landmarks[16];
+        const leftElbow = landmarks[13];
+        const rightElbow = landmarks[14];
+
+        if (!leftWrist || !rightWrist || !leftElbow || !rightElbow) return;
+
+        const now = Date.now();
+
+        // 両手首が肘より前にある（z座標が小さい）
+        // MediaPipeのz座標：小さい値ほど手前（カメラに近い）
+        const PUNCH_THRESHOLD = -0.2; // 手前にある閾値
+
+        const leftPunching = leftWrist.z < PUNCH_THRESHOLD;
+        const rightPunching = rightWrist.z < PUNCH_THRESHOLD;
+
+        // 両手が前にある = パンチポーズ
+        if (leftPunching && rightPunching && !this.punchActive) {
+            // クールダウンチェック
+            if (now - this.lastPunchTime > this.punchCooldown) {
+                this.punchActive = true;
+                this.lastPunchTime = now;
+
+                // パンチコールバック
+                if (this.callbacks.onPunch) {
+                    this.callbacks.onPunch();
+                }
+            }
+        } else if (!leftPunching || !rightPunching) {
+            // どちらかの手が下がったらリセット
+            this.punchActive = false;
+        }
+    }
+
     drawCameraOverlay(results) {
         const canvas = this.cameraOverlayCanvas;
         const ctx = this.cameraOverlayCtx;
@@ -313,5 +358,9 @@ class PoseDetector {
         this.bombCharging = false;
         this.bombChargeAmount = 0;
         this.chargeStartTime = 0;
+
+        // パンチ検出をリセット
+        this.punchActive = false;
+        this.lastPunchTime = 0;
     }
 }

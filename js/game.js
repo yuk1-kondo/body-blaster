@@ -111,6 +111,12 @@ class Game {
                 }
             });
 
+            this.poseDetector.on('onPunch', () => {
+                if (this.state === 'playing' && this.player) {
+                    this.player.fireSpread(this.bulletManager);
+                }
+            });
+
             // ゲーム開始
             this.gameScreen.style.display = 'block';
             this.initGame();

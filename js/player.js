@@ -87,6 +87,12 @@ class Player {
         }
     }
 
+    // 拡散弾発射（パンチ）
+    fireSpread(bulletManager) {
+        const centerX = this.x + this.width / 2;
+        bulletManager.addSpreadShot(centerX, this.y);
+    }
+
     // ボムチャージを設定
     setBombCharge(charge) {
         this.bombCharge = charge;
