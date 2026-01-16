@@ -105,7 +105,7 @@ class PoseDetector {
     }
 
     detectMovement(landmarks) {
-        // 首の傾きで左右移動
+        // 首の傾きで左右移動（速度制御）
         const nose = landmarks[0]; // NOSE
         const leftShoulder = landmarks[11]; // LEFT_SHOULDER
         const rightShoulder = landmarks[12]; // RIGHT_SHOULDER
@@ -118,14 +118,20 @@ class PoseDetector {
         // 鼻が肩の中心からどれだけ離れているか（傾き）
         const tilt = nose.x - shoulderCenterX;
 
-        // 傾きを 0.0 ~ 1.0 にマッピング
-        // 左に傾ける（tilt < 0）→ 1に近づく（画面左側）
-        // 右に傾ける（tilt > 0）→ 0に近づく（画面右側）
-        const normalizedX = map(tilt, -0.4, 0.4, 1, 0);
-        const clampedX = clamp(normalizedX, 0, 1);
+        // デッドゾーンを設定（小さな動きは無視）
+        const DEADZONE = 0.02;
+        if (Math.abs(tilt) < DEADZONE) {
+            // デッドゾーン内なら移動なし
+            return;
+        }
+
+        // 傾きを移動速度に変換（十字キー風）
+        // 右に傾ける（tilt > 0）→ 正の速度（右移動）
+        // 左に傾ける（tilt < 0）→ 負の速度（左移動）
+        const MOVE_SPEED = 60; // 速度倍率
 
         if (this.callbacks.onMove) {
-            this.callbacks.onMove(clampedX);
+            this.callbacks.onMove(tilt * MOVE_SPEED);
         }
     }
 

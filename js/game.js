@@ -71,9 +71,9 @@ class Game {
             await this.poseDetector.init(this.video, this.cameraOverlayCanvas);
 
             // ポーズ検出コールバック設定
-            this.poseDetector.on('onMove', (normalizedX) => {
+            this.poseDetector.on('onMove', (speed) => {
                 if (this.state === 'playing' && this.player) {
-                    this.player.setTargetX(normalizedX);
+                    this.player.move(speed);
                 }
             });
 

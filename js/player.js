@@ -30,11 +30,19 @@ class Player {
         this.invincibleDuration = 120; // 2秒
     }
 
-    // 姿勢入力から目標位置を設定
+    // 姿勢入力から目標位置を設定（旧・絶対位置制御）
     setTargetX(normalizedX) {
         // normalizedX は 0.0 ~ 1.0 の範囲
         const targetX = map(normalizedX, 0, 1, 0, this.canvasWidth - this.width);
         this.targetX = clamp(targetX, 0, this.canvasWidth - this.width);
+    }
+
+    // 速度制御で移動（十字キー風）
+    move(speed) {
+        // speed は正負の値（正:右、負:左）
+        this.targetX += speed;
+        // 画面内に制限
+        this.targetX = clamp(this.targetX, 0, this.canvasWidth - this.width);
     }
 
     update() {
