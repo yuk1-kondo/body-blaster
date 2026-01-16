@@ -225,17 +225,8 @@ class PoseDetector {
                 this.callbacks.onBombCharge(this.bombChargeAmount);
             }
         } else {
-            // 手を離したらチャージ継続（リセットしない）
-            // ただし、チャージが完了していない場合は少しずつ減少
-            if (this.bombCharging && this.bombChargeAmount < 100) {
-                this.bombChargeAmount = Math.max(0, this.bombChargeAmount - 1);
-                if (this.bombChargeAmount === 0) {
-                    this.bombCharging = false;
-                }
-                if (this.callbacks.onBombCharge) {
-                    this.callbacks.onBombCharge(this.bombChargeAmount);
-                }
-            }
+            // 手を離したらチャージを固定（減らさない）
+            this.bombCharging = false;
         }
 
         // 両手を上げている = ボム発動
