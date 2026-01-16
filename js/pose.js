@@ -119,9 +119,9 @@ class PoseDetector {
         const tilt = nose.x - shoulderCenterX;
 
         // 傾きを 0.0 ~ 1.0 にマッピング
-        // 左に傾ける（tilt < 0）→ 0に近づく
-        // 右に傾ける（tilt > 0）→ 1に近づく
-        const normalizedX = map(tilt, -0.15, 0.15, 0, 1);
+        // 左に傾ける（tilt < 0）→ 1に近づく（画面左側）
+        // 右に傾ける（tilt > 0）→ 0に近づく（画面右側）
+        const normalizedX = map(tilt, -0.25, 0.25, 1, 0);
         const clampedX = clamp(normalizedX, 0, 1);
 
         if (this.callbacks.onMove) {
@@ -202,7 +202,7 @@ class PoseDetector {
 
             // チャージ量を増やす（最大100）
             const chargeTime = (now - this.chargeStartTime) / 1000;
-            this.bombChargeAmount = Math.min(100, chargeTime * 50); // 2秒で100%
+            this.bombChargeAmount = Math.min(100, chargeTime * 25); // 4秒で100%
 
             // チャージ中のコールバック
             if (this.callbacks.onBombCharge) {

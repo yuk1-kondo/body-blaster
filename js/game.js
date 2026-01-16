@@ -131,6 +131,7 @@ class Game {
         this.player = new Player(this.gameCanvas.width, this.gameCanvas.height);
         this.bulletManager.clear();
         this.enemyManager.clear();
+        this.enemyManager.setBulletManager(this.bulletManager);
         this.effectManager = new EffectManager();
         this.starOffset = 0;
         this.isFiring = false;
@@ -208,6 +209,25 @@ class Game {
                     this.updateUI();
                     const center = this.player.getCenter();
                     this.effectManager.spawnHitSpark(center.x, center.y, '#9afcff');
+                    this.effectManager.startShake(8, 0.15);
+
+                    // ゲームオーバーチェック
+                    if (!this.player.active) {
+                        this.gameOver();
+                    }
+                }
+            });
+        }
+
+        // 当たり判定：敵弾vsプレイヤー
+        if (!this.player.bombActive && !this.player.invincible) {
+            this.bulletManager.getActiveEnemyBullets().forEach(bullet => {
+                if (checkCollision(bullet.getBounds(), this.player.getBounds())) {
+                    bullet.active = false;
+                    this.player.takeDamage();
+                    this.updateUI();
+                    const center = this.player.getCenter();
+                    this.effectManager.spawnHitSpark(center.x, center.y, '#ff6b6b');
                     this.effectManager.startShake(8, 0.15);
 
                     // ゲームオーバーチェック
