@@ -113,6 +113,9 @@ class Game {
                             this.gameCanvas.width,
                             this.gameCanvas.height
                         );
+
+                        // 自動写真撮影
+                        this.capturePhoto();
                     }
                     this.isBombing = true;
                 }
@@ -247,6 +250,42 @@ class Game {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
+    }
+
+    capturePhoto() {
+        // カメラ映像からキャンバスを作成して写真撮影
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // カメラのサイズを取得
+        const videoWidth = this.video.videoWidth;
+        const videoHeight = this.video.videoHeight;
+
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+
+        // ビデオをキャンバスに描画（水平反転してミラー表示に合わせる）
+        ctx.translate(videoWidth, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(this.video, 0, 0, videoWidth, videoHeight);
+
+        // 画像データを取得
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                a.download = `body-blaster-bomb-${timestamp}.png`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            }
+        }, 'image/png');
     }
 
     gameLoop() {
