@@ -292,4 +292,20 @@ class PoseDetector {
             this.callbacks[event] = callback;
         }
     }
+
+    reset() {
+        // 前フレームのデータをリセット
+        this.previousLeftWrist = null;
+        this.previousRightWrist = null;
+        this.previousTime = Date.now();
+
+        // 羽ばたき検出をリセット
+        this.flapDirection = 0;
+        this.lastFlapTime = 0;
+
+        // ボムチャージをリセット
+        this.bombCharging = false;
+        this.bombChargeAmount = 0;
+        this.chargeStartTime = 0;
+    }
 }

@@ -141,6 +141,10 @@ class Game {
     restartGame() {
         this.gameoverScreen.style.display = 'none';
         this.gameScreen.style.display = 'block';
+
+        // ポーズ検出器の状態をリセット
+        this.poseDetector.reset();
+
         this.initGame();
         this.state = 'playing';
         this.lastFrameTime = performance.now();
